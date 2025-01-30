@@ -11,15 +11,19 @@ struct ContentView: View {
   
   @State private var wordsGuessed: Int = 0
   @State private var wordsMissed: Int = 0
-  @State private var currentWord: Int = 0
-  @State private var guessedLetter: String = ""
+  @State private var currentWordIndex: Int = 0
+  @State private var wordToGuess: String = ""
+  @State private var revealedWord: String = ""
+  @State private var lettersguessed = "SQFTXW"
+  @State private var guessedLetter = ""
   @State private var imageName: String = "flower8"
-  @State private var imageNmber: Int = 0
   @State private var playAgainHidden: Bool = true
   
   @State private var gameStatusMessage: String = "How many guesses to uncover the hidden word?"
   
-  @State private var wordsToGuess: [String] = [
+  @FocusState private var textFieldIsFocused: Bool
+  
+  private let wordsToGuess: [String] = [
     "DOG",
     "CAT",
     "BIRD"]
@@ -51,7 +55,7 @@ struct ContentView: View {
         .padding()
       
       //TODO: Switch to wordsToGuess[currentWord]
-      Text("_ _ _ _ _")
+      Text(revealedWord)
         .font(.title)
       
       if playAgainHidden {
@@ -64,18 +68,31 @@ struct ContentView: View {
             .frame(width: 45)
             .overlay {
               RoundedRectangle(cornerRadius: 12)
-                .stroke(.gray, lineWidth: 2)
+                .stroke(.green, lineWidth: 2)
             }
+            .keyboardType(.asciiCapable)
+            .submitLabel(.done)
+            .disableAutocorrection(true)
+            .textInputAutocapitalization(.characters)
+            .onChange(of: guessedLetter) {
+              guessedLetter = guessedLetter.trimmingCharacters(in: .letters.inverted)
+              guard let lastCher = guessedLetter.last
+              else {
+                return
+              }
+              guessedLetter = String(lastCher).uppercased()
+            }
+            .onSubmit {
+              guard guessedLetter != "" else {
+                return
+              }
+              guessALetter()
+            }
+            .focused($textFieldIsFocused)
           
           //MARK: Guess letter button
           Button {
-            if imageNmber == 0 {
-              playAgainHidden.toggle()
-            } else {
-              imageNmber -= 1
-              imageName = "flower\(imageNmber)"
-              guessedLetter = ""
-            }
+            guessALetter()
             
           } label: {
             Text("Guess Letter")
@@ -94,8 +111,6 @@ struct ContentView: View {
       } else {
         //MARK: Play again button
         Button {
-          imageNmber = 8
-          playAgainHidden.toggle()
           
         } label: {
           Text("Play Again?")
@@ -119,6 +134,26 @@ struct ContentView: View {
     }
     .padding(.horizontal)
     .ignoresSafeArea(edges: .bottom)
+    .onAppear {
+      wordToGuess = wordsToGuess[currentWordIndex]
+      revealedWord = "_" + String(repeating: " _", count: wordToGuess.count - 1)
+    }
+  }
+  func guessALetter() {
+    textFieldIsFocused = false
+    lettersguessed = lettersguessed + guessedLetter
+    
+    revealedWord = ""
+    
+    for letter in wordToGuess {
+      if lettersguessed.contains(String(letter)) {
+        revealedWord = revealedWord + "\(letter) "
+      } else {
+        revealedWord += "_ "
+      }
+    }
+    
+    guessedLetter = ""
   }
 }
 
